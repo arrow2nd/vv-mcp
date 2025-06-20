@@ -1,0 +1,11 @@
+src/
+tsconfig.json
+.gitignore
+bun.lock
+package-lock.json
+.DS_Store
+*.log
+.env
+.vscode/
+.idea/
+node_modules/

@@ -1,0 +1,53 @@
+{
+  "name": "@arrow2nd/vv-mcp",
+  "version": "0.1.0",
+  "description": "VOICEVOX MCP Server for text-to-speech synthesis with Claude",
+  "keywords": [
+    "mcp",
+    "modelcontextprotocol",
+    "voicevox",
+    "tts",
+    "text-to-speech"
+  ],
+  "homepage": "https://github.com/arrow2nd/vv-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/arrow2nd/vv-mcp/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/arrow2nd/vv-mcp.git"
+  },
+  "license": "MIT",
+  "author": "arrow2nd",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "vv-mcp": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.6",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
+
