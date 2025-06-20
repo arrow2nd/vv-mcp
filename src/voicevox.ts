@@ -1,5 +1,3 @@
-import fetch from "node-fetch";
-
 export interface Voice {
   character: string;
   name: string;
