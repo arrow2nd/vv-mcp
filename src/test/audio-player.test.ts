@@ -81,8 +81,8 @@ describe("AudioPlayer", () => {
         return createMockChildProcess() as child_process.ChildProcess;
       });
 
-      // エラーが投げられないことを確認（非同期実行のため）
-      expect(player.play(audioData)).resolves.toBeUndefined();
+      // エラーが投げられることを確認（同期実行になったため）
+      await expect(player.play(audioData)).rejects.toThrow("afplay failed");
       expect(writeFileSpy).toHaveBeenCalledTimes(1);
       expect(execSpy).toHaveBeenCalledTimes(1);
     });
