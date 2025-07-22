@@ -2,6 +2,7 @@ export interface QueueTask {
   text: string;
   voiceId: number;
   speed: number;
+  audioData?: Buffer;
 }
 
 export interface QueueStatus {
@@ -14,10 +15,26 @@ export class Queue {
   private tasks: QueueTask[] = [];
   private isProcessing = false;
   private currentTask?: QueueTask;
+  private synthesizer?: (task: QueueTask) => Promise<Buffer>;
 
-  constructor(private processor: (task: QueueTask) => Promise<void>) {}
+  constructor(
+    private processor: (task: QueueTask) => Promise<void>,
+    synthesizer?: (task: QueueTask) => Promise<Buffer>,
+  ) {
+    this.synthesizer = synthesizer;
+  }
 
-  enqueue(task: QueueTask): void {
+  async enqueue(task: QueueTask): Promise<void> {
+    // 音声合成を事前に実行
+    if (this.synthesizer && !task.audioData) {
+      try {
+        task.audioData = await this.synthesizer(task);
+      } catch (error) {
+        console.error("Synthesis error during enqueue:", error);
+        // 合成エラーがあっても、タスクはキューに追加して後で再試行できるようにする
+      }
+    }
+
     this.tasks.push(task);
     this.processNext();
   }
@@ -59,4 +76,3 @@ export class Queue {
     }
   }
 }
-

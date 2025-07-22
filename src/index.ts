@@ -27,14 +27,30 @@ const server = new Server(
 
 const voicevox = new VoiceVoxService(VOICEVOX_URL);
 const audioPlayer = new AudioPlayer();
-const queue = new Queue(async (task) => {
-  const audioData = await voicevox.synthesize(
-    task.text,
-    task.voiceId,
-    task.speed,
-  );
-  await audioPlayer.play(audioData);
-});
+const queue = new Queue(
+  async (task) => {
+    // 音声データがすでに合成されている場合はそれを使用
+    if (task.audioData) {
+      await audioPlayer.play(task.audioData);
+    } else {
+      // フォールバック: 合成が失敗した場合はここで合成
+      const audioData = await voicevox.synthesize(
+        task.text,
+        task.voiceId,
+        task.speed,
+      );
+      await audioPlayer.play(audioData);
+    }
+  },
+  // 事前合成関数
+  async (task) => {
+    return await voicevox.synthesize(
+      task.text,
+      task.voiceId,
+      task.speed,
+    );
+  },
+);
 
 server.setRequestHandler(ListToolsRequestSchema, async () => ({
   tools: [
@@ -103,21 +119,34 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           speed?: number;
         };
 
-      queue.enqueue({
-        text,
-        voiceId,
-        speed,
-      });
+      try {
+        await queue.enqueue({
+          text,
+          voiceId,
+          speed,
+        });
 
-      return {
-        content: [
-          {
-            type: "text",
-            text:
-              `キューに追加しました（現在のキュー数: ${queue.getStatus().size}）`,
-          },
-        ],
-      };
+        return {
+          content: [
+            {
+              type: "text",
+              text:
+                `キューに追加しました（現在のキュー数: ${queue.getStatus().size}）`,
+            },
+          ],
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `エラー: ${
+                error instanceof Error ? error.message : "不明なエラー"
+              }`,
+            },
+          ],
+        };
+      }
     }
 
     case "list_voices": {
@@ -167,4 +196,3 @@ async function main() {
 }
 
 main().catch(console.error);
-

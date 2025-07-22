@@ -1,6 +1,6 @@
 {
   "name": "@arrow2nd/vv-mcp",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "VOICEVOX MCP Server for text-to-speech synthesis with Claude",
   "keywords": [
     "mcp",
