@@ -104,6 +104,22 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         properties: {},
       },
     },
+    {
+      name: "get_voices_in_use",
+      description: "現在使用中の音声IDのリストを取得（全プロセス共通）",
+      inputSchema: {
+        type: "object",
+        properties: {},
+      },
+    },
+    {
+      name: "get_random_unused_voice",
+      description: "使用されていない音声をランダムに1つ取得",
+      inputSchema: {
+        type: "object",
+        properties: {},
+      },
+    },
   ],
 }));
 
@@ -174,12 +190,63 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     }
 
     case "clear_queue": {
-      queue.clear();
+      await queue.clear();
       return {
         content: [
           {
             type: "text",
             text: "キューをクリアしました",
+          },
+        ],
+      };
+    }
+
+    case "get_voices_in_use": {
+      const voicesInUse = await queue.getVoicesInUse();
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify({
+              voicesInUse,
+              count: voicesInUse.length,
+            }, null, 2),
+          },
+        ],
+      };
+    }
+
+    case "get_random_unused_voice": {
+      // 利用可能な全音声を取得
+      const allVoices = await voicevox.getVoices();
+      const voicesInUse = await queue.getVoicesInUse();
+      
+      // 使用されていない音声を抽出
+      const unusedVoices = allVoices.filter(
+        (voice) => !voicesInUse.includes(voice.id),
+      );
+      
+      let selectedVoice;
+      if (unusedVoices.length > 0) {
+        // 未使用の音声からランダムに選択
+        const randomIndex = Math.floor(Math.random() * unusedVoices.length);
+        selectedVoice = unusedVoices[randomIndex];
+      } else {
+        // 全ての音声が使用中の場合は、全音声からランダムに選択
+        const randomIndex = Math.floor(Math.random() * allVoices.length);
+        selectedVoice = allVoices[randomIndex];
+      }
+      
+      return {
+        content: [
+          {
+            type: "text",
+            text: JSON.stringify({
+              voice: selectedVoice,
+              isUnused: unusedVoices.length > 0,
+              totalVoices: allVoices.length,
+              unusedCount: unusedVoices.length,
+            }, null, 2),
           },
         ],
       };
