@@ -30,12 +30,14 @@ export class SessionVoice {
       );
 
       let selectedVoice;
-      
+
       // デフォルト音声IDが未使用の場合は優先的に使用
       if (!voicesInUse.includes(this.defaultVoiceId)) {
-        selectedVoice = allVoices.find((voice) => voice.id === this.defaultVoiceId);
+        selectedVoice = allVoices.find((voice) =>
+          voice.id === this.defaultVoiceId
+        );
       }
-      
+
       // デフォルト音声が使用中または見つからない場合
       if (!selectedVoice && unusedVoices.length > 0) {
         // 未使用の音声からランダムに選択
@@ -107,3 +109,4 @@ export class SessionVoice {
     return this.sessionVoiceId;
   }
 }
+
