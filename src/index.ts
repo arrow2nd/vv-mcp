@@ -8,6 +8,7 @@ import {
 import { VoiceVoxService } from "./voicevox.js";
 import { AudioPlayer } from "./audio-player.js";
 import { Queue } from "./queue.js";
+import { SessionVoice } from "./session-voice.js";
 
 const VOICEVOX_URL = process.env.VOICEVOX_URL || "http://127.0.0.1:50021";
 const DEFAULT_VOICE_ID = parseInt(process.env.DEFAULT_VOICE_ID || "47");
@@ -27,6 +28,7 @@ const server = new Server(
 
 const voicevox = new VoiceVoxService(VOICEVOX_URL);
 const audioPlayer = new AudioPlayer();
+const sessionVoice = new SessionVoice(voicevox, DEFAULT_VOICE_ID);
 const queue = new Queue(
   async (task) => {
     // 音声データがすでに合成されている場合はそれを使用
@@ -76,6 +78,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
             minimum: 0.5,
             maximum: 2.0,
           },
+          useSessionVoice: {
+            type: "boolean",
+            description: "セッション音声を使用するか（デフォルト: false）",
+            default: false,
+          },
         },
         required: ["text"],
       },
@@ -120,6 +127,14 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
         properties: {},
       },
     },
+    {
+      name: "get_session_voice",
+      description: "このセッションで使用する音声を取得（セッション毎に固定）",
+      inputSchema: {
+        type: "object",
+        properties: {},
+      },
+    },
   ],
 }));
 
@@ -128,17 +143,25 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
   switch (name) {
     case "say": {
-      const { text, voiceId = DEFAULT_VOICE_ID, speed = DEFAULT_SPEED } =
+      const { text, voiceId = DEFAULT_VOICE_ID, speed = DEFAULT_SPEED, useSessionVoice = false } =
         args as {
           text: string;
           voiceId?: number;
           speed?: number;
+          useSessionVoice?: boolean;
         };
+
+      // セッション音声を使用する場合は音声IDを上書き
+      let actualVoiceId = voiceId;
+      if (useSessionVoice) {
+        const sessionInfo = await sessionVoice.getSessionVoice();
+        actualVoiceId = sessionInfo.voiceId;
+      }
 
       try {
         await queue.enqueue({
           text,
-          voiceId,
+          voiceId: actualVoiceId,
           speed,
         });
 
@@ -252,6 +275,37 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       };
     }
 
+    case "get_session_voice": {
+      try {
+        const sessionInfo = await sessionVoice.getSessionVoice();
+        const voices = await voicevox.getVoices();
+        const selectedVoice = voices.find((v) => v.id === sessionInfo.voiceId);
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({
+                voice: selectedVoice,
+                sessionInfo: sessionInfo.sessionInfo,
+              }, null, 2),
+            },
+          ],
+        };
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: "text",
+              text: `エラー: ${
+                error instanceof Error ? error.message : "不明なエラー"
+              }`,
+            },
+          ],
+        };
+      }
+    }
+
     default:
       throw new Error(`Unknown tool: ${name}`);
   }
@@ -260,6 +314,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 async function main() {
   const transport = new StdioServerTransport();
   await server.connect(transport);
+
+  // プロセス終了時にセッション音声をクリーンアップ
+  const cleanup = async () => {
+    await sessionVoice.cleanup();
+    await queue.clear();
+    process.exit(0);
+  };
+
+  process.on("SIGINT", cleanup);
+  process.on("SIGTERM", cleanup);
 }
 
 main().catch(console.error);
