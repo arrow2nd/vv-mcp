@@ -1,6 +1,7 @@
 # vv-mcp
 
-VOICEVOX MCP Server - Claude DesktopとClaude Codeで音声合成を利用するためのMCPサーバー
+VOICEVOX MCP Server - Claude DesktopとClaude
+Codeで音声合成を利用するためのMCPサーバー
 
 ## 必要要件
 
@@ -30,7 +31,7 @@ npm install
 npm run build
 ```
 
-## Claude Desktop / Claude Codeでの設定
+## Claude Desktopでの設定
 
 設定ファイルを編集：
 
@@ -54,6 +55,48 @@ npm run build
   }
 }
 ```
+
+### ソースからビルドした場合
+
+```json
+{
+  "mcpServers": {
+    "vv-mcp": {
+      "command": "node",
+      "args": ["/path/to/vv-mcp/dist/index.js"],
+      "env": {
+        "VOICEVOX_URL": "http://localhost:50021",
+        "DEFAULT_VOICE_ID": "47",
+        "DEFAULT_SPEED": "1.0"
+      }
+    }
+  }
+}
+```
+
+## Claude Codeでの設定
+
+`~/.claude.json`の`mcpServers`セクションに以下を追加：
+
+### npx/bunxを使用する場合（推奨）
+
+```json
+{
+  "mcpServers": {
+    "vv-mcp": {
+      "command": "npx",
+      "args": ["-y", "@arrow2nd/vv-mcp"],
+      "env": {
+        "VOICEVOX_URL": "http://localhost:50021",
+        "DEFAULT_VOICE_ID": "47",
+        "DEFAULT_SPEED": "1.0"
+      }
+    }
+  }
+}
+```
+
+bunxを使用する場合は`"command": "bunx"`に変更してください。
 
 ### ソースからビルドした場合
 
@@ -115,7 +158,8 @@ Claude Desktop/Codeを再起動後、以下のMCPツールが利用可能にな�
 ### sayツールのパラメータ
 
 - `useSessionVoice: true` - セッション音声を使用（voiceIdは無視される）
-- `useSessionVoice: false`（デフォルト） - 指定した音声IDまたはデフォルト音声を使用
+- `useSessionVoice: false`（デフォルト） -
+  指定した音声IDまたはデフォルト音声を使用
 
 ### 仕組み
 
@@ -126,7 +170,8 @@ Claude Desktop/Codeを再起動後、以下のMCPツールが利用可能にな�
 
 ## 複数インスタンス対応
 
-複数のClaude Desktop/Codeが同時に動作している場合、自動的に異なる音声を使用して音声の重複を避けます。
+複数のClaude
+Desktop/Codeが同時に動作している場合、自動的に異なる音声を使用して音声の重複を避けます。
 
 - 各プロセスで使用中の音声情報を共有
 - `get_random_unused_voice`ツールで未使用の音声を自動選択
@@ -134,13 +179,14 @@ Claude Desktop/Codeを再起動後、以下のMCPツールが利用可能にな�
 
 ## 環境変数
 
-| 変数名              | デフォルト値           | 説明                                     |
-| ------------------- | ---------------------- | ---------------------------------------- |
-| VOICEVOX_URL        | http://localhost:50021 | VOICEVOX APIのURL                        |
-| DEFAULT_VOICE_ID    | 47                     | デフォルトの音声ID (ナースロボ＿タイプＴ) |
-| DEFAULT_SPEED       | 1.0                    | デフォルトの話速                         |
-| VV_MCP_STATE_DIR    | システム一時ディレクトリ | 共有状態ファイルの保存ディレクトリ       |
+| 変数名           | デフォルト値             | 説明                                      |
+| ---------------- | ------------------------ | ----------------------------------------- |
+| VOICEVOX_URL     | http://localhost:50021   | VOICEVOX APIのURL                         |
+| DEFAULT_VOICE_ID | 47                       | デフォルトの音声ID (ナースロボ＿タイプＴ) |
+| DEFAULT_SPEED    | 1.0                      | デフォルトの話速                          |
+| VV_MCP_STATE_DIR | システム一時ディレクトリ | 共有状態ファイルの保存ディレクトリ        |
 
 ## ライセンス
 
 MIT
+
