@@ -2,14 +2,16 @@
 
 VOICEVOX MCP Server - Claude DesktopとClaude Codeで音声合成を利用するためのMCPサーバー
 
-> [!WARNING]
-> このMCPサーバーは現在 **macOSのみ** 対応しています。音声再生に`afplay`コマンドを使用しているため、他のOSでは動作しません。
-
 ## 必要要件
 
 - Node.js 18以上
 - [VOICEVOX](https://voicevox.hiroshiba.jp/)がインストールされ、起動していること
-- macOS（音声再生のため）
+- サポートOS:
+  - **macOS**: `afplay`を使用（追加インストール不要）
+  - **Linux**: `paplay`（PulseAudio）が必要
+    - Arch Linux: `pacman -S pulseaudio`
+    - Ubuntu/Debian: `apt install pulseaudio-utils`
+    - Fedora: `dnf install pulseaudio-utils`
 
 ## インストール
 
@@ -30,7 +32,10 @@ npm run build
 
 ## Claude Desktop / Claude Codeでの設定
 
-`~/Library/Application Support/Claude/claude_desktop_config.json`を編集：
+設定ファイルを編集：
+
+- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Linux**: `~/.config/Claude/claude_desktop_config.json`
 
 ### npmでインストールした場合
 

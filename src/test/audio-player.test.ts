@@ -43,7 +43,7 @@ describe("AudioPlayer", () => {
   });
 
   describe("play", () => {
-    it("should write audio file and execute afplay", async () => {
+    it("should write audio file and execute platform-specific player", async () => {
       const audioData = Buffer.from("fake audio data");
 
       writeFileSpy.mockResolvedValue(undefined);
@@ -58,7 +58,8 @@ describe("AudioPlayer", () => {
       expect(execSpy).toHaveBeenCalledTimes(1);
 
       const execCall = execSpy.mock.calls[0];
-      expect(execCall[0]).toMatch(/^afplay ".*\.wav"$/);
+      // macOS (afplay) または Linux (paplay) のいずれかのコマンドが使用されることを確認
+      expect(execCall[0]).toMatch(/^(afplay|paplay) ".*\.wav"$/);
     });
 
     it("should handle write file errors", async () => {
@@ -72,17 +73,17 @@ describe("AudioPlayer", () => {
       expect(unlinkSpy).toHaveBeenCalledTimes(1);
     });
 
-    it("should handle afplay execution errors gracefully", async () => {
+    it("should handle audio player execution errors gracefully", async () => {
       const audioData = Buffer.from("fake audio data");
 
       writeFileSpy.mockResolvedValue(undefined);
       execSpy.mockImplementation((_command: string, callback: ExecCallback) => {
-        callback(new Error("afplay failed"));
+        callback(new Error("playback failed"));
         return createMockChildProcess() as child_process.ChildProcess;
       });
 
       // エラーが投げられることを確認（同期実行になったため）
-      await expect(player.play(audioData)).rejects.toThrow("afplay failed");
+      await expect(player.play(audioData)).rejects.toThrow("playback failed");
       expect(writeFileSpy).toHaveBeenCalledTimes(1);
       expect(execSpy).toHaveBeenCalledTimes(1);
     });
