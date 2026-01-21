@@ -22,49 +22,13 @@ export class SessionVoice {
     try {
       // 利用可能な全音声を取得
       const allVoices = await this.voicevox.getVoices();
-      const voicesInUse = await this.sharedState.getVoicesInUse();
+      const availableVoiceIds = allVoices.map((voice) => voice.id);
 
-      // 使用されていない音声を抽出
-      const unusedVoices = allVoices.filter(
-        (voice) => !voicesInUse.includes(voice.id),
+      // 音声の選択と登録をアトミックに実行
+      this.sessionVoiceId = await this.sharedState.selectAndRegisterVoice(
+        availableVoiceIds,
+        this.defaultVoiceId,
       );
-
-      let selectedVoice;
-
-      // デフォルト音声IDが未使用の場合は優先的に使用
-      if (!voicesInUse.includes(this.defaultVoiceId)) {
-        selectedVoice = allVoices.find((voice) =>
-          voice.id === this.defaultVoiceId
-        );
-      }
-
-      // デフォルト音声が使用中または見つからない場合
-      if (!selectedVoice && unusedVoices.length > 0) {
-        // 未使用の音声からランダムに選択
-        const randomIndex = Math.floor(Math.random() * unusedVoices.length);
-        selectedVoice = unusedVoices[randomIndex];
-      } else if (!selectedVoice) {
-        // 全ての音声が使用中の場合は、使用頻度の低い音声を選択
-        // まず各音声の使用回数をカウント
-        const usageCount = new Map<number, number>();
-        voicesInUse.forEach((voiceId) => {
-          usageCount.set(voiceId, (usageCount.get(voiceId) || 0) + 1);
-        });
-
-        // 最も使用頻度の低い音声を選択
-        const leastUsedVoices = allVoices.filter((voice) => {
-          const count = usageCount.get(voice.id) || 0;
-          return count === Math.min(...Array.from(usageCount.values()));
-        });
-
-        const randomIndex = Math.floor(Math.random() * leastUsedVoices.length);
-        selectedVoice = leastUsedVoices[randomIndex] || allVoices[0];
-      }
-
-      this.sessionVoiceId = selectedVoice.id;
-
-      // セッション音声として使用状況を記録
-      await this.sharedState.addUsage(this.sessionVoiceId, "queued");
 
       return this.sessionVoiceId;
     } catch (error) {

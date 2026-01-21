@@ -192,4 +192,80 @@ export class SharedStateManager {
   getClientId(): string {
     return this.clientId;
   }
+
+  /**
+   * 音声の選択と登録をアトミックに行う
+   * レースコンディションを防ぐため、単一ロック内で実行
+   */
+  async selectAndRegisterVoice(
+    availableVoiceIds: number[],
+    defaultVoiceId: number,
+  ): Promise<number> {
+    const locked = await this.acquireLock();
+    if (!locked) {
+      throw new Error("Failed to acquire lock for voice selection");
+    }
+
+    try {
+      let state = await this.readState();
+      state = this.cleanupOldEntries(state);
+
+      // 現在使用中の音声IDを取得
+      const voicesInUse = new Set(state.entries.map((e) => e.voiceId));
+
+      // 未使用の音声を抽出
+      const unusedVoices = availableVoiceIds.filter(
+        (id) => !voicesInUse.has(id),
+      );
+
+      let selectedVoiceId: number;
+
+      // デフォルト音声が未使用なら優先的に使用
+      if (!voicesInUse.has(defaultVoiceId)) {
+        selectedVoiceId = defaultVoiceId;
+      } else if (unusedVoices.length > 0) {
+        // 未使用の音声からランダムに選択
+        const randomIndex = Math.floor(Math.random() * unusedVoices.length);
+        selectedVoiceId = unusedVoices[randomIndex];
+      } else {
+        // 全ての音声が使用中の場合は、使用頻度の低い音声を選択
+        const usageCount = new Map<number, number>();
+        state.entries.forEach((entry) => {
+          usageCount.set(entry.voiceId, (usageCount.get(entry.voiceId) || 0) + 1);
+        });
+
+        const minCount = Math.min(...Array.from(usageCount.values()));
+        const leastUsedVoices = availableVoiceIds.filter(
+          (id) => (usageCount.get(id) || 0) === minCount,
+        );
+
+        const randomIndex = Math.floor(Math.random() * leastUsedVoices.length);
+        selectedVoiceId = leastUsedVoices[randomIndex] ?? defaultVoiceId;
+      }
+
+      // 選択した音声を "queued" として登録
+      const entry: VoiceUsageEntry = {
+        voiceId: selectedVoiceId,
+        clientId: this.clientId,
+        timestamp: Date.now(),
+        status: "queued",
+      };
+
+      const existingIndex = state.entries.findIndex(
+        (e) => e.clientId === this.clientId && e.voiceId === selectedVoiceId,
+      );
+
+      if (existingIndex >= 0) {
+        state.entries[existingIndex] = entry;
+      } else {
+        state.entries.push(entry);
+      }
+
+      await this.writeState(state);
+
+      return selectedVoiceId;
+    } finally {
+      await this.releaseLock();
+    }
+  }
 }
