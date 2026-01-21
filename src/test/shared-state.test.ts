@@ -84,11 +84,11 @@ describe("SharedStateManager", () => {
     expect(voices).toEqual([]);
   });
 
-  test("異なるクライアントの使用状況を区別する", async () => {
+  test("同じプロセス内の複数インスタンスは同じclientIdを共有する", async () => {
     // 1つ目のマネージャーで音声を追加
     await manager.addUsage(1, "playing");
 
-    // 2つ目のマネージャーを作成（異なるクライアントID）
+    // 2つ目のマネージャーを作成（同じプロセス内なので同じclientId）
     const manager2 = new SharedStateManager();
     await manager2.addUsage(2, "playing");
 
@@ -98,12 +98,11 @@ describe("SharedStateManager", () => {
     expect(voices).toContain(1);
     expect(voices).toContain(2);
 
-    // 1つ目のクライアントをクリア
+    // どちらのインスタンスからクリアしても両方消える（同じclientIdのため）
     await manager.clearAllUsageForClient();
 
-    // 2つ目のクライアントの音声のみ残る
     const voicesAfterClear = await manager2.getVoicesInUse();
-    expect(voicesAfterClear).toEqual([2]);
+    expect(voicesAfterClear).toEqual([]);
   });
 
   test("ロックファイルの競合を処理できる", async () => {
@@ -155,9 +154,9 @@ describe("SharedStateManager", () => {
     expect(voices).toEqual([2]); // 古いエントリは除外される
   });
 
-  test("クライアントIDが一意である", () => {
+  test("同じプロセス内ではclientIdが同一である", () => {
     const manager2 = new SharedStateManager();
-    expect(manager.getClientId()).not.toBe(manager2.getClientId());
+    expect(manager.getClientId()).toBe(manager2.getClientId());
   });
 });
 

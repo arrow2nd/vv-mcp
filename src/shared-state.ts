@@ -28,8 +28,8 @@ export class SharedStateManager {
     const dir = process.env.VV_MCP_STATE_DIR || tmpdir();
     this.filePath = join(dir, SharedStateManager.FILENAME);
     this.lockPath = `${this.filePath}.lock`;
-    // クライアントIDにランダム要素を追加してユニーク性を保証
-    this.clientId = `${process.pid}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    // プロセスIDをクライアントIDとして使用（同一セッション内で一貫した値を保つため）
+    this.clientId = `${process.pid}`;
   }
 
   private async acquireLock(retries = 0): Promise<boolean> {
