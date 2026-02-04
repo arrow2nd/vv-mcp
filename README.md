@@ -13,6 +13,7 @@ Codeで音声合成を利用するためのMCPサーバー
     - Arch Linux: `pacman -S pulseaudio`
     - Ubuntu/Debian: `apt install pulseaudio-utils`
     - Fedora: `dnf install pulseaudio-utils`
+  - **Windows**: PowerShellを使用（追加インストール不要）
 
 ## インストール
 
@@ -37,6 +38,7 @@ npm run build
 
 - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - **Linux**: `~/.config/Claude/claude_desktop_config.json`
+- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
 
 ### npmでインストールした場合
 
