@@ -1,6 +1,6 @@
-import { promises as fs } from "fs";
+import { promises as fs, accessSync, constants as fsConstants } from "fs";
 import { tmpdir, platform } from "os";
-import { join } from "path";
+import { join, delimiter } from "path";
 import { exec } from "child_process";
 
 type PlayCommandInfo = {
@@ -8,8 +8,42 @@ type PlayCommandInfo = {
   getArgs: (filePath: string) => string[];
 };
 
+// PipeWire環境では pw-play、PulseAudio環境では paplay を使用するため
+// PATH上で先に見つかったコマンドを採用する
+const LINUX_PLAY_COMMAND_CANDIDATES = ["pw-play", "paplay"] as const;
+
 export class AudioPlayer {
   private playCount = 0;
+  private cachedLinuxCommand: string | null = null;
+
+  /**
+   * Linuxで利用可能な再生コマンドをPATHから検出
+   * 毎回のプロセス起動で複数回呼ばれるためキャッシュする
+   */
+  private detectLinuxPlayCommand(): string {
+    if (this.cachedLinuxCommand) {
+      return this.cachedLinuxCommand;
+    }
+
+    const pathDirs = (process.env.PATH || "").split(delimiter).filter(Boolean);
+
+    for (const candidate of LINUX_PLAY_COMMAND_CANDIDATES) {
+      for (const dir of pathDirs) {
+        try {
+          // 実行可能ファイルが存在するかチェック（execSyncより高速で副作用がない）
+          accessSync(join(dir, candidate), fsConstants.X_OK);
+          this.cachedLinuxCommand = candidate;
+          return candidate;
+        } catch {
+          // 存在しない or 実行不可なら次の候補へ
+        }
+      }
+    }
+
+    throw new Error(
+      `No audio player command found on Linux. Install one of: ${LINUX_PLAY_COMMAND_CANDIDATES.join(", ")}`,
+    );
+  }
 
   /**
    * プラットフォームに応じた音声再生コマンド情報を取得
@@ -25,9 +59,9 @@ export class AudioPlayer {
     }
 
     if (currentPlatform === "linux") {
-      // Linux では paplay (PulseAudio) を優先的に使用
+      // PipeWire (pw-play) / PulseAudio (paplay) を環境に応じて自動選択
       return {
-        command: "paplay",
+        command: this.detectLinuxPlayCommand(),
         getArgs: (filePath) => [filePath],
       };
     }

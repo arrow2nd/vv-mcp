@@ -9,10 +9,16 @@ Codeで音声合成を利用するためのMCPサーバー
 - [VOICEVOX](https://voicevox.hiroshiba.jp/)がインストールされ、起動していること
 - サポートOS:
   - **macOS**: `afplay`を使用（追加インストール不要）
-  - **Linux**: `paplay`（PulseAudio）が必要
-    - Arch Linux: `pacman -S pulseaudio`
-    - Ubuntu/Debian: `apt install pulseaudio-utils`
-    - Fedora: `dnf install pulseaudio-utils`
+  - **Linux**: `pw-play`（PipeWire）または `paplay`（PulseAudio）が必要
+    - PipeWire環境では `pw-play` を優先的に使用し、なければ `paplay` にフォールバック
+    - PipeWire:
+      - Arch Linux: `pacman -S pipewire`
+      - Ubuntu/Debian: `apt install pipewire-bin`
+      - Fedora: `dnf install pipewire-utils`
+    - PulseAudio:
+      - Arch Linux: `pacman -S pulseaudio`
+      - Ubuntu/Debian: `apt install pulseaudio-utils`
+      - Fedora: `dnf install pulseaudio-utils`
   - **Windows**: PowerShellを使用（追加インストール不要）
 
 ## インストール

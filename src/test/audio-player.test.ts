@@ -58,8 +58,8 @@ describe("AudioPlayer", () => {
       expect(execSpy).toHaveBeenCalledTimes(1);
 
       const execCall = execSpy.mock.calls[0];
-      // macOS (afplay) または Linux (paplay) のいずれかのコマンドが使用されることを確認
-      expect(execCall[0]).toMatch(/^(afplay|paplay) ".*\.wav"$/);
+      // macOS (afplay) または Linux (pw-play / paplay) のいずれかのコマンドが使用されることを確認
+      expect(execCall[0]).toMatch(/^(afplay|pw-play|paplay) ".*\.wav"$/);
     });
 
     it("should handle write file errors", async () => {
