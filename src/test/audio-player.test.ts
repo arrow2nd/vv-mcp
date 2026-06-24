@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, spyOn } from "bun:test";
 import { AudioPlayer } from "../audio-player.js";
 import * as fs from "fs";
 import * as child_process from "child_process";
+import * as os from "os";
 
 type ExecCallback = (
   error: Error | null,
@@ -23,6 +24,7 @@ describe("AudioPlayer", () => {
   let writeFileSpy: ReturnType<typeof spyOn>;
   let unlinkSpy: ReturnType<typeof spyOn>;
   let execSpy: ReturnType<typeof spyOn>;
+  let platformSpy: ReturnType<typeof spyOn>;
 
   const createMockChildProcess = (): MockChildProcess => ({
     pid: 12345,
@@ -34,12 +36,15 @@ describe("AudioPlayer", () => {
     writeFileSpy = spyOn(fs.promises, "writeFile");
     unlinkSpy = spyOn(fs.promises, "unlink");
     execSpy = spyOn(child_process, "exec");
+    // CI (ubuntu-latest) では pw-play / paplay が存在しないため darwin に偽装
+    platformSpy = spyOn(os, "platform").mockImplementation(() => "darwin");
   });
 
   afterEach(() => {
     writeFileSpy.mockRestore();
     unlinkSpy.mockRestore();
     execSpy.mockRestore();
+    platformSpy.mockRestore();
   });
 
   describe("play", () => {
